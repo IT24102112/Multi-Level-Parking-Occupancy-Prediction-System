@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Delete Account</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="sticky-footer">
+<div th:replace="fragments/header :: header"></div>
+<div class="container">
+    <h2>Delete Account</h2>
+    <div class="warning-box">
+        <p>Are you sure you want to permanently delete your account? This action cannot be undone.</p>
+        <form th:action="@{/user/delete-account}" method="post">
+            <button type="submit" class="btn btn-danger">Yes, Delete My Account</button>
+            <a th:href="@{/user/dashboard}" class="btn">Cancel</a>
+        </form>
+    </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
