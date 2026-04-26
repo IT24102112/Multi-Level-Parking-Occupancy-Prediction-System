@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | KMC Smart Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    .pred-enhanced-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .pred-enhanced-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .pred-enhanced-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .pred-enhanced-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--accent);
+    }
+    .pred-level-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .pred-available {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+    .pred-available-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .pred-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-3);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+    }
+    .pred-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .pred-bar-fill.available { background: var(--green); }
+    .pred-bar-fill.moderate  { background: var(--yellow); }
+    .pred-bar-fill.busy      { background: var(--red); }
+    .pred-status-text {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pred-status-text.available { color: var(--green); }
+    .pred-status-text.moderate  { color: var(--yellow); }
+    .pred-status-text.busy      { color: var(--red); }
+    .pred-ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(10,22,40,0.06);
+      border-radius: 20px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+    body.dark-mode .pred-ai-badge { background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+  <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+    <h2 style="border:none;margin-bottom:0.25rem;color:#fff;">Admin Dashboard</h2>
+    <p>Real-time occupancy monitoring &amp; system management</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Quick action buttons -->
+  <div class="admin-actions" style="margin-bottom:2rem;">
+    <a th:href="@{/admin/events}"    class="btn">📅 Manage Events</a>
+    <a th:href="@{/admin/reports}"   class="btn">📊 View Reports</a>
+    <a th:href="@{/admin/status}"    class="btn">🔧 System Status</a>
+    <a th:href="@{/admin/users}"     class="btn">👥 Manage Users</a>
+    <a th:href="@{/admin/billing}"   class="btn btn-accent">💳 Billing</a>
+    <a th:href="@{/admin/ai-model}"  class="btn" style="background:linear-gradient(135deg,#065f46,#059669);">🤖 AI Model</a>
+  </div>
+
+  <!-- Live Occupancy -->
+  <h2>🅿 Live Occupancy</h2>
+  <div class="parking-levels" id="occupancy">
+    <div th:each="level : ${levels}"
+         class="level-card"
+         th:style="'background: linear-gradient(135deg, ' + ${level.occupancyColor} + ' 0%, ' + ${level.occupancyColor} + 'cc 100%);'">
+      <span style="font-size:2.2rem;display:block;margin-bottom:0.75rem;">🅿</span>
+      <h3 th:text="${level.levelName}">Level 1</h3>
+      <p>Available: <strong th:text="${level.availableSlots}">0</strong>
+        / <span th:text="${level.totalSlots}">300</span></p>
+      <p>Occupied: <strong th:text="${level.currentOccupancy}">0</strong></p>
+    </div>
+  </div>
+
+  <!-- Enhanced Predictions -->
+  <h2>🔮 Predicted Availability in 15 Min</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:1.25rem;margin-top:-1rem;">
+    AI-generated forecast. Green = plenty of space · Amber = filling up · Red = almost full.
+  </p>
+  <div class="pred-enhanced-grid" id="predictions">
+    <div th:each="pred : ${predictions}" class="pred-enhanced-card">
+      <div class="pred-level-name" th:text="${pred.key}">Level 1</div>
+      <div class="pred-available" th:text="${pred.value}">0</div>
+      <div class="pred-available-label">slots predicted available</div>
+
+      <div class="pred-bar-wrap">
+        <div class="pred-bar-fill"
+             th:classappend="${pred.value >= 150 ? 'available' : (pred.value >= 60 ? 'moderate' : 'busy')}"
+             th:style="'width:' + ${T(java.lang.Math).min(100, (pred.value * 100 / 300))} + '%'">
+        </div>
+      </div>
+
+      <div class="pred-status-text"
+           th:classappend="${pred.value >= 150 ? 'available' : (pred.value >= 60 ? 'moderate' : 'busy')}"
+           th:text="${pred.value >= 150 ? '✓ Plenty of space' : (pred.value >= 60 ? '⚡ Filling up' : '⚠ Almost full')}">
+      </div>
+
+      <div class="pred-ai-badge">🤖 AI prediction · 15 min</div>
+    </div>
+  </div>
+
+  <p style="text-align:right;margin-top:-0.5rem;">
+    <a th:href="@{/admin/ai-model}"
+       style="font-size:0.85rem;color:var(--text-muted);">
+      View full AI model dashboard →
+    </a>
+  </p>
+
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

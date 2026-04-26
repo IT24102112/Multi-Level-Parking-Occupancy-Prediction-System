@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Parking | KMC Smart Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    /* ── Fees cards ──────────────────────────────────────────── */
+    .fees-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .fee-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      border-bottom: 3px solid var(--border);
+      transition: all var(--transition);
+    }
+    .fee-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow);
+      border-bottom-color: var(--accent);
+    }
+    .fee-card.highlight {
+      border-bottom-color: var(--accent);
+      background: linear-gradient(135deg, #fffbf0, #fff8e1);
+    }
+    body.dark-mode .fee-card.highlight { background: rgba(245,166,35,0.08); }
+    .fee-duration {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 0.2rem;
+    }
+    .fee-duration-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+    .fee-amount {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .fee-amount-sub { font-size: 0.65rem; color: var(--text-muted); }
+    .fees-note {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem 1.1rem;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── Enhanced predictions ────────────────────────────────── */
+    .pred-enhanced-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .pred-enhanced-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .pred-enhanced-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .pred-enhanced-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--accent);
+    }
+    .pred-level-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .pred-available {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+    .pred-available-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .pred-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: var(--surface-3);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 0.6rem;
+    }
+    .pred-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .pred-bar-fill.available { background: var(--green); }
+    .pred-bar-fill.moderate  { background: var(--yellow); }
+    .pred-bar-fill.busy      { background: var(--red); }
+    .pred-status-text {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pred-status-text.available { color: var(--green); }
+    .pred-status-text.moderate  { color: var(--yellow); }
+    .pred-status-text.busy      { color: var(--red); }
+    .pred-ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: rgba(10,22,40,0.06);
+      border-radius: 20px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+    body.dark-mode .pred-ai-badge { background: rgba(255,255,255,0.06); }
+  </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<!-- Hero -->
+<div class="hero">
+  <img src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=1600&q=80"
+       alt="Multi-level car park" class="hero-image">
+  <div class="hero-text">
+    <div class="hero-badge">🤖 AI-Powered Predictions</div>
+    <h2>Find Your Spot Instantly</h2>
+    <p>Real-time occupancy &amp; 15-minute AI predictions for all levels</p>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Full warning -->
+  <div class="full-warning" th:if="${allLevelsFull}">
+    ⚠️ All parking levels are currently full. Please check back shortly or consider alternative parking nearby.
+  </div>
+
+  <!-- Live Occupancy -->
+  <h2>🅿 Live Occupancy</h2>
+  <div class="parking-levels" id="occupancy">
+    <div th:each="level : ${levels}"
+         class="level-card"
+         th:style="'background: linear-gradient(135deg, ' + ${level.occupancyColor} + ' 0%, ' + ${level.occupancyColor} + 'cc 100%);'">
+
+      <div class="level-header">
+        <span class="level-icon-big">🅿</span>
+        <h3 th:text="${level.levelName}">Level 1</h3>
+      </div>
+
+      <!-- MAIN NUMBER (VERY IMPORTANT) -->
+      <div class="availability-main">
+        <span th:text="${level.availableSlots}">120</span>
+      </div>
+      <div class="availability-label">Available Slots</div>
+
+      <!-- Progress Bar -->
+      <div class="occ-bar-bg">
+        <div class="occ-bar-fill"
+             th:style="'width:' + ${(level.currentOccupancy * 100 / level.totalSlots)} + '%'">
+        </div>
+      </div>
+
+      <!-- Secondary Info -->
+      <div class="level-sub-info">
+        <span>Occupied: <strong th:text="${level.currentOccupancy}">180</strong></span>
+        <span>Total: <strong th:text="${level.totalSlots}">300</strong></span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Enhanced Predictions -->
+  <h2>🔮 Predicted Availability in 15 Min</h2>
+  <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:1.25rem;margin-top:-1rem;">
+    AI-generated forecast based on current occupancy patterns and historical trends.
+  </p>
+  <div class="pred-enhanced-grid" id="predictions">
+    <div th:each="pred : ${predictions}" class="pred-enhanced-card">
+      <div class="pred-level-name" th:text="${pred.key}">Level 1</div>
+      <div class="pred-available" th:text="${pred.value}">0</div>
+      <div class="pred-available-label">slots predicted available</div>
+
+      <!-- Progress bar showing % available out of 300 total -->
+      <div class="pred-bar-wrap">
+        <div class="pred-bar-fill"
+             th:classappend="${pred.value >= 150 ? 'available' : (pred.value >= 60 ? 'moderate' : 'busy')}"
+             th:style="'width:' + ${T(java.lang.Math).min(100, (pred.value * 100 / 300))} + '%'">
+        </div>
+      </div>
+
+      <!-- Status text -->
+      <div class="pred-status-text"
+           th:classappend="${pred.value >= 150 ? 'available' : (pred.value >= 60 ? 'moderate' : 'busy')}"
+           th:text="${pred.value >= 150 ? '✓ Plenty of space' : (pred.value >= 60 ? '⚡ Filling up' : '⚠ Almost full')}">
+      </div>
+
+      <div class="pred-ai-badge">🤖 AI prediction · 15 min</div>
+    </div>
+  </div>
+
+
+  <!-- Upcoming Events -->
+  <h2 style="margin-top:2rem;">📅 Upcoming Events</h2>
+  <div th:if="${upcomingEvents.isEmpty()}" class="alert alert-info">
+    <span>ℹ</span> No upcoming events in the next 3 months.
+  </div>
+  <div class="events" th:unless="${upcomingEvents.isEmpty()}">
+    <div th:each="event : ${upcomingEvents}" class="event-card">
+      <h3 th:text="${event.title}">Event</h3>
+      <p th:text="${event.description}">Description</p>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.5rem;">
+        📅 <span th:text="${#temporals.format(event.startDate, 'dd MMM yyyy HH:mm')}"></span>
+        → <span th:text="${#temporals.format(event.endDate, 'dd MMM yyyy HH:mm')}"></span>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title} + ' | KMC Car Park'">KMC Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:fragment="header">
+  <div class="logo">
+    <!-- SVG logo — no image file needed, sharp at any size -->
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none"
+         xmlns="http://www.w3.org/2000/svg" class="logo-img">
+      <rect width="38" height="38" rx="9" fill="#f5a623"/>
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Outfit,sans-serif" font-weight="800"
+            font-size="22" fill="#0a1628">P</text>
+    </svg>
+    <h1>KMC <span>Smart</span> Car Park</h1>
+  </div>
+
+  <nav>
+    <ul>
+      <li><a th:href="@{/}">Home</a></li>
+      <li><a th:href="@{/about}">About</a></li>
+      <li><a th:href="@{/bike-info}">Bikes</a></li>
+
+      <li sec:authorize="!isAuthenticated()">
+        <a th:href="@{/register}">Register</a>
+      </li>
+      <li sec:authorize="!isAuthenticated()">
+        <a th:href="@{/admin/select}"
+           class="btn btn-accent"
+           style="padding:0.4rem 1rem;font-size:0.85rem;">Login</a>
+      </li>
+
+      <li sec:authorize="hasRole('IT_ADMIN')">
+        <a th:href="@{/admin/dashboard}">Dashboard</a>
+      </li>
+      <li sec:authorize="hasRole('KMC_ADMIN')">
+        <a th:href="@{/admin/kmc/reports}">Reports</a>
+      </li>
+      <li sec:authorize="hasRole('USER')">
+        <a th:href="@{/user/dashboard}">My Account</a>
+      </li>
+
+      <li sec:authorize="isAuthenticated()">
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="submit" value="Logout" class="logout-button"/>
+        </form>
+      </li>
+
+      <li>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </li>
+    </ul>
+  </nav>
+
+  <script>
+    (function() {
+      const toggle = document.getElementById('theme-toggle');
+      if (!toggle) return;
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') {
+        document.body.classList.add('dark-mode');
+        toggle.textContent = '☀️';
+      }
+      toggle.addEventListener('click', function() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        toggle.textContent = isDark ? '☀️' : '🌙';
+      });
+    })();
+  </script>
+</header>
+</body>
+</html>

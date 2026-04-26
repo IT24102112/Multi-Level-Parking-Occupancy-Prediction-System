@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .billing-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .billing-stat {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--accent);
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .billing-stat-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .billing-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .plan-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .plan-daily   { background: #dbeafe; color: #1e40af; }
+        .plan-weekly  { background: var(--yellow-bg); color: #92580a; }
+        .plan-monthly { background: var(--green-bg); color: #065f46; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;color:#fff;">💳 Billing Management</h2>
+        <p>Manage active subscriptions and generate invoices</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Error alert -->
+    <div th:if="${param.error}" class="alert alert-error">
+        <span>⚠</span> <span th:text="${param.error}"></span>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="billing-stats" th:unless="${activeUsers.isEmpty()}">
+        <div class="billing-stat">
+            <span class="billing-stat-label">Active Subscriptions</span>
+            <span class="billing-stat-value" th:text="${activeUsers.size()}">0</span>
+        </div>
+        <div class="billing-stat" style="border-left-color:var(--green);">
+            <span class="billing-stat-label">Monthly Plans</span>
+            <span class="billing-stat-value"
+                  th:text="${#lists.size(activeUsers.?[planType == 'Monthly'])}">0</span>
+        </div>
+        <div class="billing-stat" style="border-left-color:#3b82f6;">
+            <span class="billing-stat-label">Weekly Plans</span>
+            <span class="billing-stat-value"
+                  th:text="${#lists.size(activeUsers.?[planType == 'Weekly'])}">0</span>
+        </div>
+        <div class="billing-stat" style="border-left-color:var(--yellow);">
+            <span class="billing-stat-label">Daily Plans</span>
+            <span class="billing-stat-value"
+                  th:text="${#lists.size(activeUsers.?[planType == 'Daily'])}">0</span>
+        </div>
+    </div>
+
+    <!-- No data -->
+    <div th:if="${activeUsers.isEmpty()}" class="alert alert-info">
+        <span>ℹ</span> No users with active subscriptions at the moment.
+    </div>
+
+    <!-- Table -->
+    <table class="report-table" th:unless="${activeUsers.isEmpty()}">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user, iterStat : ${activeUsers}">
+            <td th:text="${iterStat.count}"
+                style="color:var(--text-muted);font-size:0.85rem;"></td>
+            <td><strong th:text="${user.username}"></strong></td>
+            <td th:text="${user.fullName}"></td>
+            <td th:text="${user.email}"></td>
+            <td>
+                <span class="plan-tag"
+                      th:classappend="${user.planType == 'Monthly' ? 'plan-monthly' :
+                                       (user.planType == 'Weekly'  ? 'plan-weekly'  : 'plan-daily')}"
+                      th:text="${user.planType}">Plan</span>
+            </td>
+            <!-- Fixed: proper <td> tags + null-safe LocalDateTime formatting -->
+            <td th:text="${user.planStartDate == null ? 'N/A' :
+                           #temporals.format(user.planStartDate, 'dd MMM yyyy')}"></td>
+            <td th:text="${user.planEndDate == null ? 'N/A' :
+                           #temporals.format(user.planEndDate, 'dd MMM yyyy')}"></td>
+            <td>
+                <a th:href="@{/admin/bill/{u}(u=${user.username})}"
+                   class="btn btn-sm btn-accent">🧾 Generate Bill</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="admin-actions">
+        <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Dashboard</a>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
