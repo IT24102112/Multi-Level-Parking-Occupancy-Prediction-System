@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Model Dashboard | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ── Model info cards ─────────────────────────────────── */
+        .model-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 800px) { .model-grid { grid-template-columns: 1fr; } }
+
+        .model-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .model-card-header {
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .model-card-header.seasonal {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        }
+        .model-card-header.realtime {
+            background: linear-gradient(135deg, #065f46 0%, #059669 100%);
+        }
+        .model-card-header h3 {
+            color: #fff;
+            font-size: 1rem;
+            margin: 0;
+        }
+        .model-card-header span { font-size: 1.6rem; }
+        .model-card-body { padding: 1.5rem; }
+
+        .model-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+        .model-stat-row:last-child { border-bottom: none; }
+        .model-stat-label { color: var(--text-muted); font-weight: 500; }
+        .model-stat-value { color: var(--text-primary); font-weight: 700; }
+
+        .accuracy-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--green-bg);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+        }
+
+        /* ── Stats strip ──────────────────────────────────────── */
+        .ai-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .ai-stat {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            border-top: 3px solid var(--accent);
+        }
+        .ai-stat.green { border-top-color: var(--green); }
+        .ai-stat.red   { border-top-color: var(--red);   }
+        .ai-stat.blue  { border-top-color: #3b82f6;       }
+        .ai-stat-icon  { font-size: 1.6rem; margin-bottom: 0.4rem; }
+        .ai-stat-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .ai-stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        /* ── Prediction table ─────────────────────────────────── */
+        .pred-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .pred-status.normal   { background: var(--green-bg); color: #065f46; }
+        .pred-status.abnormal { background: var(--red-bg);   color: #991b1b; }
+
+        .trend-up   { color: var(--red);   font-weight: 700; }
+        .trend-down { color: var(--green); font-weight: 700; }
+        .trend-same { color: var(--text-muted); font-weight: 700; }
+
+        /* ── Chart card ───────────────────────────────────────── */
+        .ai-chart-card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+        .ai-chart-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .ai-chart-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+        .ai-chart-wrap { position: relative; height: 300px; }
+
+        /* ── Mock data notice ─────────────────────────────────── */
+        .mock-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: var(--yellow-bg);
+            border: 1px solid #fde68a;
+            border-left: 4px solid var(--yellow);
+            border-radius: var(--radius-sm);
+            padding: 0.85rem 1.1rem;
+            font-size: 0.88rem;
+            color: #78350f;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;color:#fff;">🤖 AI Model Dashboard</h2>
+        <p>Prediction model performance, accuracy metrics and recent outputs</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Mock data notice (shown when prediction table is empty) -->
+    <div class="mock-notice" th:if="${totalPredictions == 0}">
+        <span>⚠️</span>
+        <span>The prediction table is currently empty — the AI model has not yet been connected to the
+              web app. The chart and recent predictions below use <strong>sample data</strong> to
+              demonstrate the interface. Once the model is connected and starts writing to the
+              <code>prediction</code> table, live data will appear here automatically.</span>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="ai-stats">
+        <div class="ai-stat green">
+            <div class="ai-stat-icon">🎯</div>
+            <div class="ai-stat-label">Seasonal Model Accuracy</div>
+            <div class="ai-stat-value" th:text="${seasonalModelAccuracy}">87.3%</div>
+        </div>
+        <div class="ai-stat green">
+            <div class="ai-stat-icon">⚡</div>
+            <div class="ai-stat-label">Real-Time Model Accuracy</div>
+            <div class="ai-stat-value" th:text="${realtimeModelAccuracy}">91.8%</div>
+        </div>
+        <div class="ai-stat blue">
+            <div class="ai-stat-icon">📊</div>
+            <div class="ai-stat-label">Total Predictions</div>
+            <div class="ai-stat-value" th:text="${totalPredictions > 0 ? totalPredictions : 'Demo'}">0</div>
+        </div>
+        <div class="ai-stat red">
+            <div class="ai-stat-icon">🚨</div>
+            <div class="ai-stat-label">Abnormal Flags</div>
+            <div class="ai-stat-value" th:text="${abnormalCount}">0</div>
+        </div>
+    </div>
+
+    <!-- Model info cards -->
+    <h2>🧠 Model Information</h2>
+    <div class="model-grid">
+
+        <!-- Seasonal model -->
+        <div class="model-card">
+            <div class="model-card-header seasonal">
+                <span>📅</span>
+                <h3>Seasonal Pattern Model</h3>
+            </div>
+            <div class="model-card-body">
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Algorithm</span>
+                    <span class="model-stat-value" th:text="${seasonalModelType}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Accuracy</span>
+                    <span class="accuracy-badge">✓ <span th:text="${seasonalModelAccuracy}"></span></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Mean Absolute Error</span>
+                    <span class="model-stat-value" th:text="${seasonalModelMae}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Training Data Period</span>
+                    <span class="model-stat-value" th:text="${seasonalTrainingPeriod}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Training Records</span>
+                    <span class="model-stat-value" th:text="${seasonalTrainingRecords}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Last Trained</span>
+                    <span class="model-stat-value" th:text="${seasonalLastTrained}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Purpose</span>
+                    <span class="model-stat-value">Long-term seasonal trends</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time model -->
+        <div class="model-card">
+            <div class="model-card-header realtime">
+                <span>⚡</span>
+                <h3>Real-Time Pattern Model</h3>
+            </div>
+            <div class="model-card-body">
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Algorithm</span>
+                    <span class="model-stat-value" th:text="${realtimeModelType}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Accuracy</span>
+                    <span class="accuracy-badge">✓ <span th:text="${realtimeModelAccuracy}"></span></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Mean Absolute Error</span>
+                    <span class="model-stat-value" th:text="${realtimeModelMae}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Training Data Period</span>
+                    <span class="model-stat-value" th:text="${realtimeTrainingPeriod}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Training Records</span>
+                    <span class="model-stat-value" th:text="${realtimeTrainingRecords}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Last Trained</span>
+                    <span class="model-stat-value" th:text="${realtimeLastTrained}"></span>
+                </div>
+                <div class="model-stat-row">
+                    <span class="model-stat-label">Purpose</span>
+                    <span class="model-stat-value">15-min ahead prediction</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Predicted vs Actual chart -->
+    <h2>📈 Predicted vs Actual Occupancy</h2>
+    <div class="ai-chart-card">
+        <div class="ai-chart-title">Prediction Accuracy Over Time</div>
+        <div class="ai-chart-sub">
+            Comparison of predicted occupancy against actual recorded values.
+            Closer the lines, higher the model accuracy.
+        </div>
+        <div class="ai-chart-wrap">
+            <canvas id="predActualChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Recent predictions table -->
+    <h2>🕐 Recent Predictions</h2>
+    <table class="report-table">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Predicted At</th>
+            <th>Valid For</th>
+            <th>Predicted Occupancy</th>
+            <th>Actual Occupancy</th>
+            <th>Difference</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="pred, iterStat : ${recentPredictions}">
+            <td th:text="${iterStat.count}"
+                style="color:var(--text-muted);font-size:0.85rem;"></td>
+            <td th:text="${pred.predictionTime != null ?
+                           #temporals.format(pred.predictionTime, 'dd MMM HH:mm') : 'N/A'}"></td>
+            <td th:text="${pred.validForTime != null ?
+                           #temporals.format(pred.validForTime, 'dd MMM HH:mm') : 'N/A'}"></td>
+            <td>
+                <strong th:text="${pred.predictedOccupancy}"></strong>
+                <span style="color:var(--text-muted);font-size:0.82rem;"> vehicles</span>
+            </td>
+            <td th:text="${pred.actualOccupancy != null ? pred.actualOccupancy + ' vehicles' : '—'}"></td>
+            <td>
+                <span th:if="${pred.actualOccupancy != null}">
+                    <span th:with="diff=${pred.actualOccupancy - pred.predictedOccupancy}">
+                        <span th:if="${diff > 0}" class="trend-up"
+                              th:text="'+' + ${diff}">+5</span>
+                        <span th:if="${diff < 0}" class="trend-down"
+                              th:text="${diff}">-5</span>
+                        <span th:if="${diff == 0}" class="trend-same">0</span>
+                    </span>
+                </span>
+                <span th:unless="${pred.actualOccupancy != null}"
+                      style="color:var(--text-muted);">—</span>
+            </td>
+            <td>
+                <span th:if="${pred.isAbnormal}" class="pred-status abnormal">⚠ Abnormal</span>
+                <span th:unless="${pred.isAbnormal}" class="pred-status normal">✓ Normal</span>
+            </td>
+        </tr>
+        <tr th:if="${recentPredictions.isEmpty()}">
+            <td colspan="7" class="no-data">No prediction data available.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="admin-actions">
+        <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Dashboard</a>
+    </div>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const chartJson = /*[[${chartJson}]]*/ '{}';
+    const chartData = JSON.parse(chartJson);
+
+    if (document.getElementById('predActualChart') &&
+        chartData.labels && chartData.labels.length > 0) {
+
+        new Chart(document.getElementById('predActualChart'), {
+            type: 'line',
+            data: {
+                labels: chartData.labels,
+                datasets: [
+                    {
+                        label: 'Predicted Occupancy',
+                        data: chartData.predicted,
+                        borderColor: 'rgba(10, 22, 40, 1)',
+                        backgroundColor: 'rgba(10, 22, 40, 0.08)',
+                        borderWidth: 2.5,
+                        pointRadius: 3,
+                        tension: 0.35,
+                        fill: false,
+                    },
+                    {
+                        label: 'Actual Occupancy',
+                        data: chartData.actual,
+                        borderColor: 'rgba(245, 166, 35, 1)',
+                        backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                        borderWidth: 2.5,
+                        pointRadius: 3,
+                        tension: 0.35,
+                        fill: false,
+                        spanGaps: true,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y ?? 'N/A'} vehicles`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { maxTicksLimit: 10, maxRotation: 45, font: { size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: { display: true, text: 'Vehicles' }
+                    }
+                }
+            }
+        });
+    }
+    /*]]>*/
+</script>
+</body>
+</html>

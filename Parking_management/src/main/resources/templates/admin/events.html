@@ -1,0 +1,60 @@
+<!-- ============================================================
+     EVENTS PAGE  →  save as: admin/events.html
+     ============================================================ -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Events | KMC Smart Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<div class="page-header">
+  <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+    <h2 style="border:none;margin-bottom:0.25rem;">📅 Event Calendar</h2>
+    <p>Manage upcoming events that may impact parking demand</p>
+  </div>
+</div>
+<div class="container">
+  <div class="admin-actions" style="margin-bottom:1.5rem;">
+    <a th:href="@{/admin/events/new}" class="btn btn-accent">+ Add New Event</a>
+  </div>
+  <div th:if="${events.isEmpty()}" class="alert alert-info">
+    <span>ℹ</span> No events have been added yet.
+  </div>
+  <table class="event-table" th:unless="${events.isEmpty()}">
+    <thead>
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Start</th>
+      <th>End</th>
+      <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="event : ${events}">
+      <td><strong th:text="${event.title}">Event</strong></td>
+      <td th:text="${event.description}">Desc</td>
+      <td th:text="${#temporals.format(event.startDate, 'dd MMM yyyy HH:mm')}">Start</td>
+      <td th:text="${#temporals.format(event.endDate, 'dd MMM yyyy HH:mm')}">End</td>
+      <td>
+        <div class="action-buttons">
+          <a th:href="@{/admin/events/edit/{id}(id=${event.id})}" class="btn btn-sm">Edit</a>
+          <form th:action="@{/admin/events/delete/{id}(id=${event.id})}" method="get" style="display:inline;">
+            <input type="submit" value="Delete" class="btn btn-sm btn-danger"
+                   onclick="return confirm('Delete this event?')"/>
+          </form>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <div class="admin-actions">
+    <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Dashboard</a>
+  </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

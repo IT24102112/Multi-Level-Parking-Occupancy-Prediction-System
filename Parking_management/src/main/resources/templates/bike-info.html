@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bike Parking | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<div class="container">
+    <div class="bike-info-box">
+        <span style="font-size:3rem;display:block;margin-bottom:1rem;">🏍</span>
+        <h2 th:text="#{bike.title}">Bikes &amp; Three-Wheelers Parking</h2>
+        <p style="margin-bottom:1.25rem;" th:text="#{bike.subtitle}">Your designated parking area is located at:</p>
+        <h3 th:text="#{bike.location}">2nd Floor — E Block</h3>
+        <p style="margin-top:0.75rem;color:rgba(255,255,255,0.75);" th:text="#{bike.desc}">
+            Please follow the directional signs at the entrance to E Block.<br>
+            Thank you for using the KMC Smart Car Park system.
+        </p>
+    </div>
+    <div class="bike-actions">
+        <a th:href="@{/}" class="btn btn-accent" th:text="'← ' + #{btn.back.occupancy}">← Back to Live Occupancy</a>
+    </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

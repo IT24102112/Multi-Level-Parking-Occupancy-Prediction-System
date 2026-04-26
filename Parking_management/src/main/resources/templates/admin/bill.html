@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .invoice-page {
+            background: var(--surface-2);
+            min-height: calc(100vh - 68px - 60px);
+            padding: 2.5rem 1rem;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .bill-container {
+            max-width: 640px;
+            width: 100%;
+        }
+        .bill-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .bill-brand-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+        }
+        .bill-brand-text h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .bill-brand-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .invoice-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 1.5rem 0;
+            padding: 1.25rem;
+            background: var(--surface-3);
+            border-radius: var(--radius-sm);
+        }
+        .invoice-meta-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .invoice-meta-value {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--primary);
+        }
+        .invoice-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.92rem;
+        }
+        .bill-row-label { color: var(--text-muted); }
+        .bill-row-value { color: var(--text-primary); font-weight: 600; }
+        .bill-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 0 0;
+            margin-top: 0.5rem;
+        }
+        .bill-total-label {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .bill-total-amount {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .print-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        @media print {
+            .no-print, header, footer, .print-actions { display: none !important; }
+            body { background: white; }
+            .bill-container { box-shadow: none; margin: 0; padding: 0; max-width: 100%; }
+            .invoice-page { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header" class="no-print"></div>
+
+<div class="invoice-page">
+    <div class="bill-container">
+        <div class="bill-container" style="padding:2.5rem;">
+
+            <!-- Brand header -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;
+                        margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:2px solid var(--accent);">
+                <div class="bill-brand">
+                    <div class="bill-brand-icon">🅿</div>
+                    <div class="bill-brand-text">
+                        <h3>KMC Smart Car Park</h3>
+                        <p>Kandy Municipal Council</p>
+                        <p style="font-size:0.75rem;color:var(--text-muted);">Tel: +94 81 222 2275</p>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;
+                               letter-spacing:0.05em;font-weight:600;">Invoice</p>
+                    <div class="invoice-number">
+                        #KMC-<span th:text="${user.username.toUpperCase()}"></span>
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem;"
+                       th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy')}"></p>
+                </div>
+            </div>
+
+            <!-- Bill to -->
+            <div class="invoice-meta">
+                <div>
+                    <div class="invoice-meta-label">Bill To</div>
+                    <div class="invoice-meta-value" th:text="${user.fullName}"></div>
+                    <div style="font-size:0.85rem;color:var(--text-muted);"
+                         th:text="${user.email}"></div>
+                    <div style="font-size:0.85rem;color:var(--text-muted);">
+                        @<span th:text="${user.username}"></span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div class="invoice-meta-label">Subscription Plan</div>
+                    <div class="invoice-meta-value" th:text="${user.planType}"></div>
+                </div>
+            </div>
+
+            <!-- Line items -->
+            <div>
+                <div class="bill-row">
+                    <span class="bill-row-label">Plan Type</span>
+                    <span class="bill-row-value" th:text="${user.planType}"></span>
+                </div>
+                <div class="bill-row">
+                    <span class="bill-row-label">Subscription Start</span>
+                    <!-- null-safe: planStartDate is LocalDateTime -->
+                    <span class="bill-row-value"
+                          th:text="${user.planStartDate == null ? 'N/A' :
+                                     #temporals.format(user.planStartDate, 'dd MMM yyyy')}">
+                    </span>
+                </div>
+                <div class="bill-row">
+                    <span class="bill-row-label">Subscription End</span>
+                    <!-- null-safe: planEndDate is LocalDateTime -->
+                    <span class="bill-row-value"
+                          th:text="${user.planEndDate == null ? 'N/A' :
+                                     #temporals.format(user.planEndDate, 'dd MMM yyyy')}">
+                    </span>
+                </div>
+                <div class="bill-row">
+                    <span class="bill-row-label">Amount</span>
+                    <span class="bill-row-value">
+                        Rs. <span th:text="${amount}"></span>/-
+                    </span>
+                </div>
+            </div>
+
+            <!-- Total -->
+            <div class="bill-total" style="border-top:2px solid var(--border);">
+                <span class="bill-total-label">Total Amount Due</span>
+                <span class="bill-total-amount">
+                    Rs. <span th:text="${amount}"></span>/-
+                </span>
+            </div>
+
+            <div style="margin-top:1.5rem;padding:1rem;background:var(--surface-3);
+                        border-radius:var(--radius-sm);text-align:center;
+                        font-size:0.82rem;color:var(--text-muted);">
+                Thank you for using KMC Smart Car Park. Please retain this invoice for your records.
+            </div>
+        </div>
+
+        <!-- Print actions -->
+        <div class="print-actions no-print">
+            <button onclick="window.print();" class="btn btn-accent">🖨 Print / Save PDF</button>
+            <a th:href="@{/admin/billing}" class="btn btn-secondary">← Back to Billing</a>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer" class="no-print"></div>
+</body>
+</html>
