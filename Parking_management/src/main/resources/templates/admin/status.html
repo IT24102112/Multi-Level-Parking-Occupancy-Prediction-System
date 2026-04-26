@@ -1,0 +1,95 @@
+<!-- ============================================================
+     SYSTEM STATUS PAGE  →  save as: admin/status.html
+     ============================================================ -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Status | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .status-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .status-item {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            text-align: center;
+            border-top: 3px solid var(--border);
+        }
+        .status-item.ok   { border-top-color: var(--green); }
+        .status-item.fail { border-top-color: var(--red); }
+        .status-item-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .status-item-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+        .status-item-value { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; margin-top: 0.3rem; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;">System Status</h2>
+        <p>Last checked: <span th:text="${#temporals.format(lastChecked, 'dd MMM yyyy HH:mm:ss')}"></span>
+            &nbsp;·&nbsp; Admin: <span sec:authentication="name"></span></p>
+    </div>
+</div>
+<div class="container">
+
+    <div class="status-summary">
+        <div class="status-item" th:classappend="${dbStatus == 'Connected' ? 'ok' : 'fail'}">
+            <div class="status-item-icon" th:text="${dbStatus == 'Connected' ? '🗄' : '❌'}">🗄</div>
+            <div class="status-item-label">Database</div>
+            <div class="status-item-value"
+                 th:text="${dbStatus}"
+                 th:class="${dbStatus == 'Connected' ? 'status-ok' : 'status-error'}"></div>
+        </div>
+        <div class="status-item" th:classappend="${modelStatus.contains('Online') ? 'ok' : 'fail'}">
+            <div class="status-item-icon" th:text="${modelStatus.contains('Online') ? '🤖' : '⚠️'}">🤖</div>
+            <div class="status-item-label">AI Model</div>
+            <div class="status-item-value"
+                 th:text="${modelStatus}"
+                 th:class="${modelStatus.contains('Online') ? 'status-ok' : 'status-error'}"></div>
+        </div>
+        <div class="status-item ok">
+            <div class="status-item-icon">📡</div>
+            <div class="status-item-label">IoT Sensors</div>
+            <div class="status-item-value status-ok"
+                 th:text="${sensorStatuses.size()} + ' sensors'"></div>
+        </div>
+    </div>
+
+    <h2>📡 Sensor Status</h2>
+    <table class="status-table">
+        <thead>
+        <tr>
+            <th>Level</th>
+            <th>Sensor Type</th>
+            <th>Status</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="sensor : ${sensorStatuses}">
+            <td th:text="${sensor.level}">Level 1</td>
+            <td th:text="${sensor.type}">Entrance</td>
+            <td>
+                <span th:text="${sensor.status}"
+                      th:class="${sensor.status == 'OK' ? 'status-ok' : 'status-error'}"></span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="admin-actions">
+        <a th:href="@{/admin/dashboard}" class="btn">← Back to Dashboard</a>
+    </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>
