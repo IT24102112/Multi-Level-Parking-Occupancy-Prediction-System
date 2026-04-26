@@ -1,0 +1,187 @@
+/* ============================================================
+   KMC Smart Car Park – Mobile Responsiveness, Animations & Overlays
+   ============================================================ */
+
+/* ── 1. Glassmorphism Overlays (Interlays) ───────────────── */
+.glass-overlay {
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: var(--shadow);
+}
+
+body.dark-mode .glass-overlay {
+    background: rgba(10, 22, 40, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ── 2. Advanced CSS Animations ────────────────────────────── */
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.staggered-entry {
+    animation: slideUpFade 0.65s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* ── 3. Hamburger Menu & Mobile Navbar Toggle ──────────────── */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-around;
+    width: 28px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+    padding: 0;
+}
+
+.hamburger {
+    width: 28px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    position: relative;
+    transform-origin: 1px;
+}
+
+.hamburger::before,
+.hamburger::after {
+    content: '';
+    position: absolute;
+    width: 28px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 10px;
+    transition: all 0.3s linear;
+    transform-origin: 1px;
+    left: 0;
+}
+
+.hamburger::before { top: -9px; }
+.hamburger::after { top: 9px; }
+
+/* Hamburger Menu Animations */
+.menu-toggle.active .hamburger { background: transparent; }
+.menu-toggle.active .hamburger::before { transform: rotate(45deg); top: -10px; left: 3px; }
+.menu-toggle.active .hamburger::after { transform: rotate(-45deg); top: 10px; left: 3px; }
+
+/* ── 4. Mobile Responsiveness (Media Queries) ──────────────── */
+@media screen and (max-width: 900px) {
+    header {
+        padding: 0 1.5rem;
+    }
+    .hero-text h2 {
+        font-size: 2.2rem;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    /* Container Adjustments */
+    .container {
+        padding: 0 1.25rem;
+        margin: 1.5rem auto;
+    }
+
+    /* Typography Scaledown */
+    h2 {
+        font-size: 1.4rem;
+        margin-bottom: 1.2rem;
+    }
+    
+    .hero {
+        height: 350px;
+    }
+    
+    .hero-text h2 {
+        font-size: 1.8rem;
+    }
+
+    .hero-image {
+        height: 350px;
+    }
+
+    /* Header & Navigation Stack */
+    .menu-toggle {
+        display: flex; /* Show Hamburger */
+    }
+
+    nav#nav-menu {
+        position: fixed;
+        top: 68px; /* Below Header */
+        right: -100%; /* Hidden off-screen */
+        width: 250px;
+        height: calc(100vh - 68px);
+        flex-direction: column;
+        background: var(--primary-mid); /* Solid dark theme match */
+        box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+        transition: right 0.4s ease-in-out;
+        padding-top: 2rem;
+        z-index: 999;
+    }
+
+    nav#nav-menu.active {
+        right: 0;
+    }
+
+    nav#nav-menu ul {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        width: 100%;
+        padding: 0 2rem;
+    }
+
+    nav#nav-menu ul li {
+        width: 100%;
+    }
+
+    nav#nav-menu ul li a, 
+    nav#nav-menu ul li .logout-button {
+        display: block;
+        width: 100%;
+        text-align: left;
+        font-size: 1.1rem;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Grids to Single Column */
+    .fees-grid,
+    .parking-levels, 
+    .pred-enhanced-grid, 
+    .events,
+    .plans {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .level-card,
+    .pred-enhanced-card,
+    .fee-card,
+    .admin-card,
+    .plan-card {
+        width: 100%;
+    }
+
+    .admin-select {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .form-card {
+        padding: 1.5rem;
+    }
+}
