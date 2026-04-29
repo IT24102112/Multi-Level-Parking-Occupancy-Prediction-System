@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Simulator | KMC Smart Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+  <style>
+    .sim-status-card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    .sim-indicator {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .sim-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      box-shadow: 0 0 0 4px rgba(200,200,200,0.2);
+    }
+    .sim-dot.running {
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(16,185,129,0.2);
+      animation: pulse 1.5s infinite;
+    }
+    .sim-dot.stopped { background: var(--red); box-shadow: 0 0 0 4px rgba(239,68,68,0.2); }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 4px rgba(16,185,129,0.2); }
+      50%      { box-shadow: 0 0 0 8px rgba(16,185,129,0.1); }
+    }
+    .sim-label { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+    .sim-sublabel { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .sim-controls { display: flex; gap: 0.75rem; }
+
+    .live-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .live-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      box-shadow: var(--shadow-sm);
+      border-top: 3px solid var(--accent);
+    }
+    .live-card.green { border-top-color: var(--green); }
+    .live-card.blue  { border-top-color: #3b82f6; }
+    .live-card.red   { border-top-color: var(--red); }
+    .live-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.4rem; }
+    .live-value { font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
+
+    .level-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .level-bar-card { background: var(--surface); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow-sm); }
+    .level-bar-name { font-weight: 700; font-size: 0.88rem; color: var(--primary); margin-bottom: 0.5rem; display: flex; justify-content: space-between; }
+    .level-bar-bg { width: 100%; height: 12px; background: var(--surface-3); border-radius: 6px; overflow: hidden; }
+    .level-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+    .level-bar-fill.low      { background: var(--green); }
+    .level-bar-fill.moderate { background: var(--yellow); }
+    .level-bar-fill.high     { background: var(--red); }
+
+    .info-box {
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border: 1px solid #bfdbfe;
+      border-left: 4px solid #3b82f6;
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.25rem;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    body.dark-mode .info-box { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
+  </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+  <div style="max-width:1240px;margin:0 auto;padding:0 2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h2 style="border:none;margin-bottom:0.25rem;color:#fff;">📡 IoT Simulator</h2>
+      <p>Simulates sensor events based on real KMC parking patterns</p>
+    </div>
+    <a th:href="@{/admin/dashboard}" class="btn"
+       style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);">
+      ← Dashboard
+    </a>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Info box -->
+  <div class="info-box">
+    💡 The simulator replays real vehicle entry/exit patterns from 201,212 KMC parking records
+    (Oct–Dec 2025). Every 30 seconds it fires entry/exit events to keep live occupancy aligned
+    with the expected pattern for the current day and hour. This populates
+    <code>parking_logs</code>, updates <code>parking_level</code>, and every 2 hours
+    writes a snapshot to <code>occupancy_log</code> — exactly as real IoT sensors would.
+  </div>
+
+  <!-- Status card -->
+  <div class="sim-status-card">
+    <div class="sim-indicator">
+      <div class="sim-dot" id="simDot"
+           th:classappend="${simRunning ? 'running' : 'stopped'}"></div>
+      <div>
+        <div class="sim-label" id="simLabel"
+             th:text="${simRunning ? 'Simulator Running' : 'Simulator Stopped'}">
+        </div>
+        <div class="sim-sublabel" id="simMsg" th:text="${simMessage}"></div>
+      </div>
+    </div>
+    <div class="sim-controls">
+      <form th:action="@{/admin/simulator/start}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-success"
+                th:disabled="${simRunning}">▶ Start</button>
+      </form>
+      <form th:action="@{/admin/simulator/stop}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-danger"
+                th:disabled="${!simRunning}">⏹ Stop</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Live stats -->
+  <h2>📊 Live Statistics</h2>
+  <div class="live-grid">
+    <div class="live-card">
+      <div class="live-label">Total Occupancy</div>
+      <div class="live-value" id="totalOcc" th:text="${totalOcc}">0</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">/ 1200 capacity</div>
+    </div>
+    <div class="live-card blue">
+      <div class="live-label">Target (This Hour)</div>
+      <div class="live-value" id="simTarget" th:text="${simTarget}">0</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">based on historical pattern</div>
+    </div>
+    <div class="live-card green">
+      <div class="live-label">Entries Today</div>
+      <div class="live-value" id="entriesToday" th:text="${entriesToday}">0</div>
+    </div>
+    <div class="live-card red">
+      <div class="live-label">Exits Today</div>
+      <div class="live-value" id="exitsToday" th:text="${exitsToday}">0</div>
+    </div>
+    <div class="live-card">
+      <div class="live-label">Last Tick</div>
+      <div class="live-value" id="lastTick" style="font-size:1.2rem;"
+           th:text="${lastTick}">—</div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-top:0.2rem;">ticks every 30 seconds</div>
+    </div>
+  </div>
+
+  <!-- Per-level occupancy bars -->
+  <h2>🅿 Level-by-Level Occupancy</h2>
+  <div class="level-bars" id="levelBars">
+    <div th:each="level : ${levels}" class="level-bar-card">
+      <div class="level-bar-name">
+        <span th:text="${level.levelName}">Level 1</span>
+        <span th:text="${level.currentOccupancy} + ' / 300'"
+              style="color:var(--text-muted);font-weight:400;font-size:0.82rem;"></span>
+      </div>
+      <div class="level-bar-bg">
+        <div class="level-bar-fill"
+             th:classappend="${level.currentOccupancy >= 240 ? 'high' : (level.currentOccupancy >= 150 ? 'moderate' : 'low')}"
+             th:style="'width:' + ${(level.currentOccupancy * 100 / 300)} + '%'">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <h2>⚙️ How It Works</h2>
+  <div style="background:var(--surface);border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow-sm);margin-bottom:2rem;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem;">
+      <div>
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">⏱</div>
+        <div style="font-weight:700;color:var(--primary);margin-bottom:0.3rem;">Every 30 seconds</div>
+        <div style="font-size:0.88rem;color:var(--text-secondary);">
+          Compares current occupancy to the expected pattern for this day and hour.
+          Fires entry or exit events to gradually align with the target.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">📋</div>
+        <div style="font-weight:700;color:var(--primary);margin-bottom:0.3rem;">Writes to parking_logs</div>
+        <div style="font-size:0.88rem;color:var(--text-secondary);">
+          Every simulated sensor event writes a row to <code>parking_logs</code>
+          with direction (entry/exit) and timestamp — identical to real IoT output.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">📊</div>
+        <div style="font-weight:700;color:var(--primary);margin-bottom:0.3rem;">Every 10 minutes</div>
+        <div style="font-size:0.88rem;color:var(--text-secondary);">
+          A scheduler snapshots current occupancy per level into <code>occupancy_log</code>,
+          which feeds the reports module with fresh data.
+        </div>
+      </div>
+      <div>
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">🤖</div>
+        <div style="font-weight:700;color:var(--primary);margin-bottom:0.3rem;">AI model integration</div>
+        <div style="font-size:0.88rem;color:var(--text-secondary);">
+          The real-time AI model reads live <code>parking_level</code> data to generate
+          15-minute predictions, which are stored in the <code>prediction</code> table.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-actions">
+    <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Dashboard</a>
+    <a th:href="@{/admin/reports}" class="btn">📊 View Reports</a>
+    <a th:href="@{/admin/ai-model}" class="btn">🤖 AI Dashboard</a>
+  </div>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- Live polling every 5 seconds -->
+<script>
+  setInterval(function() {
+    fetch('/admin/simulator/status')
+            .then(r => r.json())
+            .then(data => {
+              // Status indicator
+              const dot   = document.getElementById('simDot');
+              const label = document.getElementById('simLabel');
+              const msg   = document.getElementById('simMsg');
+              dot.className   = 'sim-dot ' + (data.running ? 'running' : 'stopped');
+              label.textContent = data.running ? 'Simulator Running' : 'Simulator Stopped';
+              msg.textContent   = data.message;
+
+              // Stats
+              document.getElementById('totalOcc').textContent    = data.totalOccupancy;
+              document.getElementById('simTarget').textContent   = data.target;
+              document.getElementById('entriesToday').textContent = data.entriesToday;
+              document.getElementById('exitsToday').textContent  = data.exitsToday;
+              document.getElementById('lastTick').textContent    = data.lastTick;
+
+              // Level bars
+              const bars = document.querySelectorAll('.level-bar-card');
+              const levelNames = Object.keys(data.levels);
+              bars.forEach((card, i) => {
+                if (!levelNames[i]) return;
+                const occ = data.levels[levelNames[i]];
+                const pct = Math.round((occ / 300) * 100);
+                card.querySelector('.level-bar-name span:last-child').textContent = occ + ' / 300';
+                const fill = card.querySelector('.level-bar-fill');
+                fill.style.width = pct + '%';
+                fill.className = 'level-bar-fill ' + (occ >= 240 ? 'high' : occ >= 150 ? 'moderate' : 'low');
+              });
+            })
+            .catch(() => {}); // silent fail if server busy
+  }, 5000);
+</script>
+</body>
+</html>

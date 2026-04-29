@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .user-search {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 0.6rem 1rem;
+            max-width: 360px;
+        }
+        .user-search input {
+            border: none;
+            outline: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.92rem;
+            width: 100%;
+            background: transparent;
+            color: var(--text-primary);
+        }
+        .user-search span { color: var(--text-muted); }
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.65rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .badge-plan {
+            background: var(--accent-dim);
+            color: #92580a;
+            border: 1px solid rgba(245,166,35,0.3);
+        }
+        body.dark-mode .badge-plan { color: var(--accent-light); }
+        .badge-none {
+            background: var(--surface-3);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+        .user-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;">👥 Manage Users</h2>
+        <p>View and manage all registered parking users</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="user-search">
+        <span>🔍</span>
+        <input type="text" id="userSearch" placeholder="Search by username, name or email…"
+               oninput="filterUsers(this.value)">
+    </div>
+
+    <p class="user-count" id="userCount"></p>
+
+    <div th:if="${users.isEmpty()}" class="alert alert-info">
+        <span>ℹ</span> No registered users found.
+    </div>
+
+    <table class="report-table" id="usersTable" th:unless="${users.isEmpty()}">
+        <thead>
+        <tr>
+            <th>#</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Plan</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user, iterStat : ${users}">
+            <td th:text="${iterStat.count}" style="color:var(--text-muted);font-size:0.85rem;">1</td>
+            <td><strong th:text="${user.username}">username</strong></td>
+            <td th:text="${user.fullName}">Full Name</td>
+            <td th:text="${user.email}">email</td>
+            <td>
+                <span th:if="${user.planType != null}"
+                      class="badge badge-plan"
+                      th:text="${user.planType}">Plan</span>
+                <span th:unless="${user.planType != null}"
+                      class="badge badge-none">None</span>
+            </td>
+            <td>
+                <span th:if="${user.enabled}" class="status-ok">Active</span>
+                <span th:unless="${user.enabled}" class="status-error">Blacklisted</span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <form th:if="${user.enabled}"
+                          th:action="@{/admin/users/blacklist/{u}(u=${user.username})}"
+                          method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-warning"
+                                onclick="return confirm('Blacklist this user?')">Blacklist</button>
+                    </form>
+                    <form th:unless="${user.enabled}"
+                          th:action="@{/admin/users/unblacklist/{u}(u=${user.username})}"
+                          method="post" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-success">Restore</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="admin-actions">
+        <a th:href="@{/admin/dashboard}" class="btn btn-secondary">← Dashboard</a>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<script>
+    function filterUsers(query) {
+        const rows = document.querySelectorAll('#usersTable tbody tr');
+        const q = query.toLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            const show = text.includes(q);
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.getElementById('userCount').textContent =
+            visible + ' user' + (visible !== 1 ? 's' : '') + ' shown';
+    }
+    // Initial count
+    const total = document.querySelectorAll('#usersTable tbody tr').length;
+    const countEl = document.getElementById('userCount');
+    if (countEl) countEl.textContent = total + ' user' + (total !== 1 ? 's' : '') + ' total';
+</script>
+</body>
+</html>

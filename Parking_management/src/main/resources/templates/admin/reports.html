@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Occupancy Reports | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/reports.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        /* ── Back to top floating button ─────────────────────── */
+        .back-top {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition);
+            z-index: 999;
+        }
+        .back-top:hover { background: var(--accent); transform: translateY(-2px); }
+        .back-top.visible { display: flex; }
+
+        /* ── Page header action bar ──────────────────────────── */
+        .reports-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* ── Quick date presets ──────────────────────────────── */
+        .date-presets {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.85rem;
+        }
+        .preset-btn {
+            background: var(--surface-3);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .preset-btn:hover {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--primary);
+        }
+
+        /* ── Utilisation card ────────────────────────────────── */
+        .util-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-top: 3px solid #3b82f6;
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .util-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+        .util-bar-wrap {
+            width: 100%;
+            height: 10px;
+            background: var(--surface-3);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0.6rem 0 0.4rem;
+        }
+        .util-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.6s ease;
+        }
+        .util-bar-fill.low      { background: var(--green); }
+        .util-bar-fill.moderate { background: var(--yellow); }
+        .util-bar-fill.high     { background: var(--red); }
+
+        /* ── Insight strip ───────────────────────────────────── */
+        .insight-strip {
+            background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+            border: 1px solid #bfdbfe;
+            border-left: 4px solid #3b82f6;
+            border-radius: var(--radius-sm);
+            padding: 0.9rem 1.25rem;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+        }
+        body.dark-mode .insight-strip {
+            background: rgba(59,130,246,0.08);
+            border-color: rgba(59,130,246,0.3);
+            color: var(--text-secondary);
+        }
+        .insight-strip.warning {
+            background: linear-gradient(135deg, #fef3c7, #fff7ed);
+            border-left-color: var(--yellow);
+            border-color: #fde68a;
+        }
+        body.dark-mode .insight-strip.warning {
+            background: rgba(245,158,11,0.08);
+            border-color: rgba(245,158,11,0.3);
+        }
+
+        /* ── Occupancy % badge in table ──────────────────────── */
+        .occ-pct {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            margin-left: 0.4rem;
+        }
+        .occ-pct.low      { background: var(--green-bg); color: #065f46; }
+        .occ-pct.moderate { background: var(--yellow-bg); color: #78350f; }
+        .occ-pct.high     { background: var(--red-bg); color: #991b1b; }
+
+        /* ── Collapsible table ───────────────────────────────── */
+        .table-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 0.75rem;
+        }
+        .table-toggle-icon {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        .table-toggle-icon.open { transform: rotate(180deg); }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<!-- ── Page Header ──────────────────────────────────────────────────── -->
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;
+                display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+            <h2 style="border:none;margin-bottom:0.25rem;color:#fff;">📊 Occupancy Reports</h2>
+            <p>Analyse occupancy trends and patterns to support informed decisions</p>
+        </div>
+        <!-- Back to Dashboard always visible at top -->
+        <div style="display:flex;gap:0.75rem;">
+            <a sec:authorize="hasRole('IT_ADMIN')"
+               th:href="@{/admin/dashboard}"
+               class="btn"
+               style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);">
+                ← Dashboard
+            </a>
+            <a sec:authorize="hasRole('KMC_ADMIN')"
+               th:href="@{/admin/kmc/reports}"
+               class="btn"
+               style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);">
+                🔄 Refresh
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- Role indicator -->
+    <p sec:authorize="hasRole('IT_ADMIN')" class="role-indicator">⚙ IT Admin — full access</p>
+    <p sec:authorize="hasRole('KMC_ADMIN')" class="role-indicator">🏛 KMC Admin — reports only</p>
+
+    <!-- ── Filter Section ────────────────────────────────────────────── -->
+    <div class="filter-section">
+
+        <!-- Quick date presets -->
+        <div class="date-presets">
+            <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;
+                         align-self:center;margin-right:0.25rem;">Quick:</span>
+            <button class="preset-btn" onclick="setPreset('today')">Today</button>
+            <button class="preset-btn" onclick="setPreset('yesterday')">Yesterday</button>
+            <button class="preset-btn" onclick="setPreset('7days')">Last 7 Days</button>
+            <button class="preset-btn" onclick="setPreset('30days')">Last 30 Days</button>
+            <button class="preset-btn" onclick="setPreset('thismonth')">This Month</button>
+        </div>
+
+        <form th:action="${formAction}" method="get"
+              class="filter-form" id="reportFilterForm">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="startDate">From:</label>
+                    <input type="date" id="startDate" name="startDate"
+                           th:value="${#temporals.format(startDate, 'yyyy-MM-dd')}"
+                           th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                           required>
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">To:</label>
+                    <input type="date" id="endDate" name="endDate"
+                           th:value="${#temporals.format(endDate, 'yyyy-MM-dd')}"
+                           th:max="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
+                           required>
+                </div>
+                <div class="filter-group">
+                    <label for="levelFilter">Level:</label>
+                    <select id="levelFilter" name="levelFilter" class="filter-select">
+                        <option value="" th:selected="${#strings.isEmpty(levelFilter)}">All Levels</option>
+                        <option th:each="lvl : ${levelNames}"
+                                th:value="${lvl}" th:text="${lvl}"
+                                th:selected="${lvl == levelFilter}">Level 1</option>
+                    </select>
+                </div>
+                <div class="filter-group filter-buttons">
+                    <button type="submit" class="btn">Apply Filter</button>
+                    <a th:href="${formAction}" class="btn btn-secondary">Reset</a>
+                </div>
+            </div>
+        </form>
+
+        <p class="filter-info">
+            Showing data from
+            <strong th:text="${#temporals.format(startDate, 'dd MMM yyyy')}"></strong>
+            to
+            <strong th:text="${#temporals.format(endDate, 'dd MMM yyyy')}"></strong>
+            <span th:if="${!#strings.isEmpty(levelFilter)}">
+                — Level: <strong th:text="${levelFilter}"></strong>
+            </span>
+            <span th:if="${#strings.isEmpty(levelFilter)}"> — All Levels</span>
+            (<span th:text="${totalLogs}"></span> records)
+        </p>
+    </div>
+
+    <!-- Error message -->
+    <div th:if="${errorMessage}" class="alert alert-error">
+        <span>⚠</span> <span th:text="${errorMessage}"></span>
+    </div>
+
+    <!-- Empty state -->
+    <div th:if="${totalLogs == 0 and errorMessage == null}" class="alert alert-info">
+        <span>ℹ</span>
+        No occupancy data found for the selected filters. Try a different date range or level.
+    </div>
+
+    <!-- ── Summary Cards ─────────────────────────────────────────────── -->
+    <div th:if="${totalLogs > 0}" class="summary-grid">
+
+        <div class="summary-card">
+            <div class="summary-icon">📊</div>
+            <div class="summary-label">Average Occupancy</div>
+            <div class="summary-value" th:text="${avgOccupancy}">0</div>
+            <div class="summary-sub">vehicles (time-weighted avg)</div>
+        </div>
+
+        <div class="summary-card summary-card--peak">
+            <div class="summary-icon">📈</div>
+            <div class="summary-label">Peak Occupancy</div>
+            <div class="summary-value" th:text="${peakOccupancy}">0</div>
+            <div class="summary-sub">vehicles (highest recorded)</div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-icon">🕐</div>
+            <div class="summary-label">Busiest Hour</div>
+            <div class="summary-value summary-value--sm" th:text="${peakHourLabel}">N/A</div>
+            <div class="summary-sub">highest avg occupancy</div>
+        </div>
+
+        <div class="summary-card summary-card--level">
+            <div class="summary-icon">🅿</div>
+            <div class="summary-label">Busiest Level</div>
+            <div class="summary-value summary-value--sm" th:text="${busiestLevel}">N/A</div>
+            <div class="summary-sub">highest single reading</div>
+        </div>
+
+        <!-- NEW: Utilisation % card -->
+        <div class="util-card">
+            <div class="summary-icon">⚡</div>
+            <div class="summary-label">Avg Utilisation</div>
+            <div class="summary-value"
+                 th:classappend="${avgUtilPct >= 80 ? ' summary-value--red' : ''}"
+                 th:text="${avgUtilPct} + '%'">0%</div>
+            <div class="util-bar-wrap">
+                <div class="util-bar-fill"
+                     th:classappend="${avgUtilPct >= 80 ? 'high' : (avgUtilPct >= 50 ? 'moderate' : 'low')}"
+                     th:style="'width:' + ${avgUtilPct} + '%'"></div>
+            </div>
+            <div class="summary-sub">of total capacity used</div>
+        </div>
+
+    </div>
+
+    <!-- ── Insight Strip ─────────────────────────────────────────────── -->
+    <div th:if="${totalLogs > 0 and insightSentence != null}"
+         class="insight-strip"
+         th:classappend="${avgUtilPct >= 80 ? ' warning' : ''}">
+        <span th:text="${avgUtilPct >= 80 ? '⚠️' : '💡'}">💡</span>
+        <span th:text="${insightSentence}"></span>
+    </div>
+
+    <!-- ── Charts ────────────────────────────────────────────────────── -->
+    <div th:if="${totalLogs > 0}" class="charts-grid">
+        <div class="chart-card chart-card--wide">
+            <h3 class="chart-title">Occupancy Trend Over Time</h3>
+            <div class="chart-wrap">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3 class="chart-title">Average Occupancy per Level</h3>
+            <div class="chart-wrap">
+                <canvas id="barChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Detailed Log (collapsible) ───────────────────────────────── -->
+    <div th:if="${totalLogs > 0}">
+        <div class="table-toggle" onclick="toggleTable()">
+            <h3 class="section-heading" style="margin:0;">
+                Detailed Log
+                <span style="font-size:0.8rem;color:var(--text-muted);font-weight:400;margin-left:0.5rem;"
+                      th:text="'(' + ${totalLogs} + ' records)'"></span>
+            </h3>
+            <span class="table-toggle-icon open" id="tableIcon">▼</span>
+        </div>
+
+        <div id="tableWrap">
+            <table class="report-table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Level</th>
+                    <th>Occupancy</th>
+                    <th>Recorded At</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="log, iterStat : ${logs}">
+                    <td th:text="${iterStat.count}"
+                        style="color:var(--text-muted);font-size:0.85rem;"></td>
+                    <td th:text="${log.levelName}">Level 1</td>
+                    <td>
+                        <div class="occ-cell">
+                            <div style="display:flex;align-items:center;gap:0.4rem;">
+                                <span th:text="${log.occupancy}">50</span>
+                                <!-- NEW: occupancy % badge -->
+                                <span class="occ-pct"
+                                      th:with="pct=${T(java.lang.Math).min(100, (log.occupancy * 100 / 300))}"
+                                      th:classappend="${pct >= 80 ? 'high' : (pct >= 50 ? 'moderate' : 'low')}"
+                                      th:text="${pct} + '%'">0%</span>
+                            </div>
+                            <div class="occ-bar-bg">
+                                <div class="occ-bar-fill"
+                                     th:style="'width:' + ${T(java.lang.Math).min(100, (log.occupancy * 100 / 300))} + '%;'">
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td th:text="${#temporals.format(log.recordedAt, 'dd MMM yyyy HH:mm')}">
+                        01 Jan 2025 10:00
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ── Bottom actions (also has back button here for convenience) ── -->
+    <div class="admin-actions">
+        <a sec:authorize="hasRole('IT_ADMIN')"
+           th:href="@{/admin/dashboard}" class="btn">← Back to Dashboard</a>
+        <a sec:authorize="hasRole('KMC_ADMIN')"
+           th:href="@{/admin/kmc/reports}" class="btn">🔄 Refresh</a>
+    </div>
+
+</div>
+
+<!-- Back to top floating button -->
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+        title="Back to top">↑</button>
+
+<div th:replace="fragments/footer :: footer"></div>
+
+<!-- ── Scripts ────────────────────────────────────────────────────────── -->
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const trendData = /*[[${trendChartJson}]]*/ '{}';
+    const barData   = /*[[${barChartJson}]]*/ '{}';
+    const trend = JSON.parse(trendData);
+    const bar   = JSON.parse(barData);
+
+    const PALETTE       = ['rgba(10,22,40,1)','rgba(245,166,35,1)','rgba(16,185,129,1)','rgba(239,68,68,1)','rgba(99,102,241,1)'];
+    const PALETTE_LIGHT = PALETTE.map(c => c.replace(',1)' ,',0.15)'));
+
+    if (document.getElementById('trendChart') && trend.labels && trend.labels.length > 0) {
+        const levelNames = Object.keys(trend.datasets);
+        const datasets = levelNames.map((lvl, i) => ({
+            label: lvl,
+            data: trend.datasets[lvl],
+            borderColor: PALETTE[i % PALETTE.length],
+            backgroundColor: PALETTE_LIGHT[i % PALETTE_LIGHT.length],
+            borderWidth: 2,
+            pointRadius: trend.labels.length > 60 ? 0 : 3,
+            tension: 0.3,
+            fill: false,
+            spanGaps: true,
+        }));
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: { labels: trend.labels, datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y ?? 'N/A'} vehicles` } }
+                },
+                scales: {
+                    x: { ticks: { maxTicksLimit: 12, maxRotation: 45, font: { size: 11 } } },
+                    y: { beginAtZero: true, title: { display: true, text: 'Vehicles' } }
+                }
+            }
+        });
+    }
+
+    if (document.getElementById('barChart') && bar.labels && bar.labels.length > 0) {
+        const barColors      = bar.labels.map((_, i) => PALETTE[i % PALETTE.length]);
+        const barColorsLight = bar.labels.map((_, i) => PALETTE_LIGHT[i % PALETTE_LIGHT.length]);
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: bar.labels,
+                datasets: [
+                    { label: 'Avg Occupancy', data: bar.values,
+                        backgroundColor: barColorsLight, borderColor: barColors,
+                        borderWidth: 2, borderRadius: 6 },
+                    { label: 'Capacity', data: bar.capacities, type: 'line',
+                        borderColor: 'rgba(180,0,0,0.7)', borderDash: [6,4],
+                        borderWidth: 2, pointRadius: 0, fill: false }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} vehicles` } }
+                },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Vehicles' } } }
+            }
+        });
+    }
+    /*]]>*/
+</script>
+
+<script>
+    // ── Form validation ──────────────────────────────────────────────────
+    document.getElementById('reportFilterForm').addEventListener('submit', function(e) {
+        const start = document.getElementById('startDate').value;
+        const end   = document.getElementById('endDate').value;
+        const today = new Date().toISOString().split('T')[0];
+        if (!start || !end) { e.preventDefault(); showFormError('Please select both a From and To date.'); return; }
+        if (end < start)    { e.preventDefault(); showFormError("The 'To' date cannot be before the 'From' date."); return; }
+        if (start > today)  { e.preventDefault(); showFormError("The 'From' date cannot be in the future."); return; }
+    });
+
+    function showFormError(message) {
+        const existing = document.getElementById('inlineFormError');
+        if (existing) existing.remove();
+        const div = document.createElement('div');
+        div.id = 'inlineFormError';
+        div.className = 'alert alert-error';
+        div.innerHTML = '<span>⚠</span> ' + message;
+        const form = document.getElementById('reportFilterForm');
+        form.parentNode.insertBefore(div, form.nextSibling);
+    }
+
+    // ── Quick date presets ────────────────────────────────────────────────
+    function setPreset(preset) {
+        const today = new Date();
+        const fmt = d => d.toISOString().split('T')[0];
+        let start, end = fmt(today);
+        if (preset === 'today') {
+            start = fmt(today);
+        } else if (preset === 'yesterday') {
+            const y = new Date(today); y.setDate(y.getDate() - 1);
+            start = fmt(y); end = fmt(y);
+        } else if (preset === '7days') {
+            const d = new Date(today); d.setDate(d.getDate() - 6);
+            start = fmt(d);
+        } else if (preset === '30days') {
+            const d = new Date(today); d.setDate(d.getDate() - 29);
+            start = fmt(d);
+        } else if (preset === 'thismonth') {
+            start = fmt(new Date(today.getFullYear(), today.getMonth(), 1));
+        }
+        document.getElementById('startDate').value = start;
+        document.getElementById('endDate').value   = end;
+        document.getElementById('reportFilterForm').submit();
+    }
+
+    // ── Collapsible table ─────────────────────────────────────────────────
+    function toggleTable() {
+        const wrap = document.getElementById('tableWrap');
+        const icon = document.getElementById('tableIcon');
+        if (wrap.style.display === 'none') {
+            wrap.style.display = '';
+            icon.classList.add('open');
+        } else {
+            wrap.style.display = 'none';
+            icon.classList.remove('open');
+        }
+    }
+
+    // ── Back to top button ────────────────────────────────────────────────
+    window.addEventListener('scroll', function() {
+        const btn = document.getElementById('backTop');
+        if (window.scrollY > 400) btn.classList.add('visible');
+        else btn.classList.remove('visible');
+    });
+</script>
+
+</body>
+</html>

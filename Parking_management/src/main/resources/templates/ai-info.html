@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Information | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .info-container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+        .info-card { background: var(--surface); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .info-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--accent); }
+        .chart-container { position: relative; height: 350px; width: 100%; margin-top: 2rem; }
+
+        /* Model metadata grid */
+        .metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .meta-item { background: var(--surface-2); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid var(--primary); }
+        .meta-item.accent  { border-left-color: var(--accent); }
+        .meta-item.green   { border-left-color: var(--green); }
+        .meta-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 0.25rem; }
+        .meta-value { font-size: 1.1rem; font-weight: 800; color: var(--primary); font-family: 'Outfit', sans-serif; }
+        .accuracy-pill { display: inline-block; background: var(--green-bg); color: #065f46; padding: 0.2rem 0.75rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+
+        /* Model section headers */
+        .model-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 2rem 0 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        /* Ensemble explainer */
+        .ensemble-card {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--accent);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+        .ensemble-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin: 1.25rem 0;
+        }
+        .ensemble-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 0.75rem 1.25rem;
+            text-align: center;
+            min-width: 130px;
+            box-shadow: var(--shadow-sm);
+        }
+        .ensemble-box-label { font-size: 0.68rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em; }
+        .ensemble-box-value { font-family: 'Outfit', sans-serif; font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-top: 0.2rem; }
+        .ensemble-box.highlight { border-color: var(--accent); background: linear-gradient(135deg, #fffbf0, #fff8e1); }
+        body.dark-mode .ensemble-box.highlight { background: rgba(245,166,35,0.08); }
+        .ensemble-arrow { font-size: 1.4rem; color: var(--text-muted); }
+        .ensemble-plus {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;color:#fff;" th:text="#{text.ai.info.title}">Detailed AI Information</h2>
+        <p th:text="#{text.ai.info.subtitle}">Step-by-step forecast for the next 60 minutes</p>
+    </div>
+</div>
+
+<div class="info-container">
+    <a th:href="@{/}" class="btn btn-secondary" style="margin-bottom: 1.5rem;" th:text="#{btn.back.home}">← Back to Live Occupancy</a>
+
+    <!-- Forecast Chart -->
+    <div class="info-card">
+        <h3 th:text="#{text.chart.forecast}">1-Hour Availability Forecast</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Ensemble AI forecast — remaining available slots predicted across the next 60 minutes.
+        </p>
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+        </div>
+    </div>
+
+<!--        &lt;!&ndash; Ensemble Explainer &ndash;&gt;-->
+<!--        <div class="ensemble-card">-->
+<!--            <h3 style="margin-bottom:0.4rem;">🔀 How the Ensemble Works</h3>-->
+<!--            <p style="font-size:0.88rem;color:var(&#45;&#45;text-muted);margin-bottom:0;">-->
+<!--                Two independent AI models are combined to produce a single, more reliable forecast.-->
+<!--            </p>-->
+<!--            <div class="ensemble-flow">-->
+<!--                <div class="ensemble-box">-->
+<!--                    <div class="ensemble-box-label">Seasonal LSTM</div>-->
+<!--                    <div class="ensemble-box-value">60% weight</div>-->
+<!--                </div>-->
+<!--                <div class="ensemble-plus">+</div>-->
+<!--                <div class="ensemble-box">-->
+<!--                    <div class="ensemble-box-label">Adaptive SGD</div>-->
+<!--                    <div class="ensemble-box-value">40% weight</div>-->
+<!--                </div>-->
+<!--                <div class="ensemble-arrow">→</div>-->
+<!--                <div class="ensemble-box highlight">-->
+<!--                    <div class="ensemble-box-label">Physics Filter</div>-->
+<!--                    <div class="ensemble-box-value">Max 120 / 15min</div>-->
+<!--                </div>-->
+<!--                <div class="ensemble-arrow">→</div>-->
+<!--                <div class="ensemble-box highlight">-->
+<!--                    <div class="ensemble-box-label">Final Prediction</div>-->
+<!--                    <div class="ensemble-box-value">±5 vehicles MAE</div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--            <p style="font-size:0.82rem;color:var(&#45;&#45;text-muted);text-align:center;margin:0;">-->
+<!--                A physics constraint caps unrealistic jumps between steps. Output is always clamped between 0 and 1,200 slots.-->
+<!--            </p>-->
+<!--        </div>-->
+
+    <!-- Seasonal LSTM Details -->
+    <div class="model-section-title">AI Model Technical Details</div>
+    <div class="metadata-grid">
+        <div class="meta-item">
+            <div class="meta-label">Algorithm</div>
+            <div class="meta-value" >LSTM + SGD Regressor</div>
+        </div>
+<!--        th:text="${seasonalModelType}"-->
+        <div class="meta-item green">
+            <div class="meta-label">Accuracy</div>
+            <div class="meta-value"><span class="accuracy-pill" th:text="${seasonalModelAccuracy}"></span></div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Mean Absolute Error</div>
+            <div class="meta-value" th:text="${seasonalModelMae}">8 vehicles</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Training Period</div>
+            <div class="meta-value" th:text="${seasonalTrainingPeriod}">2015 – 2025</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Training Records</div>
+            <div class="meta-value" th:text="${seasonalTrainingRecords}">~3.6 million</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Last Trained</div>
+            <div class="meta-value" th:text="${seasonalLastTrained}">April 2026</div>
+        </div>
+    </div>
+
+
+
+    <!-- About section -->
+    <div style="margin-top:2.5rem;padding:2rem;background:var(--surface-2);border-radius:var(--radius-lg);text-align:center;">
+        <h4>About the Forecast</h4>
+        <p style="max-width:640px;margin:0.5rem auto;font-size:0.9rem;color:var(--text-muted);">
+            The ensemble combines a seasonal LSTM trained on 10 years of historical patterns with
+            an adaptive SGD model that reacts to recent real-time sensor data. A physics layer
+            prevents unrealistic jumps between forecast steps, ensuring predictions always reflect
+            real-world constraints.
+        </p>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const forecast      = /*[[${forecast}]]*/ [0,0,0,0];
+    const totalCapacity = /*[[${totalCapacity}]]*/ 1200;
+
+    const availableData = forecast.map(occ => Math.max(0, totalCapacity - occ));
+
+    new Chart(document.getElementById('forecastChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: ['15 Min', '30 Min', '45 Min', '60 Min'],
+            datasets: [{
+                label: 'Predicted Available Slots',
+                data: availableData,
+                backgroundColor: 'rgba(245,166,35,0.1)',
+                borderColor: 'rgba(245,166,35,1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: 'rgba(10,22,40,1)',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: totalCapacity,
+                    title: { display: true, text: 'Slots Available' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.parsed.y} slots available`
+                    }
+                }
+            }
+        }
+    });
+    /*]]>*/
+</script>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

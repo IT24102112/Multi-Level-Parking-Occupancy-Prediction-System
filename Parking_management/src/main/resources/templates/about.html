@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .about-hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            padding: 4rem 2rem;
+            text-align: center;
+            color: #fff;
+        }
+        .about-hero h2 {
+            color: #fff;
+            border: none;
+            font-size: 2.2rem;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+        }
+        .about-hero p {
+            color: rgba(255,255,255,0.75);
+            font-size: 1.05rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin: 2.5rem 0;
+        }
+        .feature-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.75rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-top: 3px solid var(--accent);
+            transition: all var(--transition);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+        .feature-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+        .feature-card h3 { color: var(--primary); margin-bottom: 0.5rem; font-size: 1rem; }
+        .feature-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .contact-item {
+            background: var(--surface);
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .contact-item span:first-child { font-size: 1.4rem; }
+
+        /* Fees table on about page */
+        .fees-table-wrap {
+            background: var(--surface);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+        }
+        .fees-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .fees-table th {
+            background: var(--primary);
+            color: #fff;
+            padding: 0.85rem 1.25rem;
+            text-align: left;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .fees-table td {
+            padding: 0.8rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+        }
+        .fees-table tbody tr:last-child td { border-bottom: none; }
+        .fees-table tbody tr:hover { background: var(--surface-3); }
+        .fees-table .amount {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .fees-table .full-day {
+            background: linear-gradient(90deg, #fffbf0, #fff8e1);
+        }
+        body.dark-mode .fees-table .full-day {
+            background: rgba(245,166,35,0.08);
+        }
+        .fees-table .full-day .amount { color: var(--accent); }
+
+        /* About stats: ensure numbers adapt in dark-mode */
+        .about-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:1rem; margin-top:0.5rem; }
+        .about-stats .stat-card {
+            text-align:center;
+            padding:1rem;
+            background:var(--surface-3);
+            border-radius:var(--radius-sm);
+        }
+        .about-stats .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size:2rem;
+            font-weight:800;
+            color: var(--primary);
+        }
+        .about-stats .stat-label {
+            font-size:0.78rem;
+            color:var(--text-muted);
+            font-weight:600;
+            text-transform:uppercase;
+            letter-spacing:0.04em;
+        }
+        /* Dark mode override: use light text for values */
+        body.dark-mode .about-stats .stat-value {
+            color: var(--text-primary);
+        }
+        body.dark-mode .about-stats .stat-label { color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<!-- About hero -->
+<div class="about-hero">
+    <h2 th:text="#{about.title}">About KMC Smart Car Park</h2>
+    <p th:text="#{about.subtitle}">A next-generation AI and IoT powered parking system for the historic city of Kandy</p>
+</div>
+
+<div class="container">
+
+    <!-- System features -->
+    <h2 th:text="'🚀 ' + #{about.features.title}">🚀 System Features</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">📡</span>
+            <h3 th:text="#{about.iot.title}">IoT Sensor Network</h3>
+            <p th:text="#{about.iot.desc}">Ultrasonic sensors at every entrance and exit provide second-by-second occupancy updates across all 4 levels.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🤖</span>
+            <h3 th:text="#{about.ai.title}">AI-Powered Predictions</h3>
+            <p th:text="#{about.ai.desc}">Two AI models — one for seasonal trends, one for real-time patterns — predict occupancy 15 minutes ahead.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">📊</span>
+            <h3 th:text="#{about.analytics.title}">Analytics &amp; Reports</h3>
+            <p th:text="#{about.analytics.desc}">Detailed occupancy reports with trends, peak hours and level comparisons to support informed decision-making.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">🏛</span>
+            <h3 th:text="#{about.roles.title}">Multi-Role Access</h3>
+            <p th:text="#{about.roles.desc}">Separate portals for KMC admins, IT division staff and parking users — each with tailored features and access levels.</p>
+        </div>
+    </div>
+
+    <!-- About the car park -->
+    <h2 th:text="'🅿 ' + #{about.parking.title}">🅿 About the Car Park</h2>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:2rem;
+                box-shadow:var(--shadow-sm);margin-bottom:2rem;">
+        <p style="color:var(--text-secondary);line-height:1.8;margin-bottom:1.5rem;" th:text="#{about.parking.desc}">
+            The Kandy Municipal Council Car Park is a multi-level facility in the heart of Kandy,
+            serving thousands of visitors to Sri Lanka's UNESCO World Heritage city daily.
+            With 4 levels and 300 slots per level, this AI-powered system ensures you can find
+            available parking quickly and efficiently.
+        </p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+                    gap:1rem;margin-top:0.5rem;" class="about-stats">
+            <div class="stat-card">
+                <div class="stat-value">4</div>
+                <div class="stat-label" th:text="#{about.levels.label}">Levels</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">1,200</div>
+                <div class="stat-label" th:text="#{about.slots.label}">Total Slots</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">24/7</div>
+                <div class="stat-label" th:text="#{about.monitoring.label}">Live Monitoring</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">15m</div>
+                <div class="stat-label" th:text="#{about.prediction.label}">AI Prediction</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parking Fees -->
+    <h2 th:text="'💰 ' + #{about.fees.title}">💰 Parking Charges</h2>
+    <div class="fees-table-wrap">
+        <table class="fees-table">
+            <thead>
+            <tr>
+                <th th:text="#{about.fees.duration}">Duration</th>
+                <th th:text="#{about.fees.charge}">Charge (incl. VAT)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="full-day"><td th:text="#{about.fees.h1}">Up to 1 hour</td><td class="amount">Rs. 100/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h2}">Up to 2 hours</td><td class="amount">Rs. 130/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h3}">Up to 3 hours</td><td class="amount">Rs. 150/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h4}">Up to 4 hours</td><td class="amount">Rs. 180/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h5}">Up to 5 hours</td><td class="amount">Rs. 200/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h6}">Up to 6 hours</td><td class="amount">Rs. 230/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h7}">Up to 7 hours</td><td class="amount">Rs. 250/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h8}">Up to 8 hours</td><td class="amount">Rs. 300/-</td></tr>
+            <tr class="full-day"><td th:text="#{about.fees.h9}">Up to 9 hours</td><td class="amount">Rs. 400/-</td></tr>
+            <tr class="full-day">
+                <td><strong th:text="#{about.fees.full}">Full Day (up to 24 hours)</strong></td>
+                <td class="amount"><strong>Rs. 600/-</strong></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:2rem;">
+        💡 <span th:text="#{about.fees.note}">All charges are inclusive of VAT and apply from the time of entry.</span>
+        <strong>Safe parking — a solution to traffic congestion in Kandy city.</strong>
+        <span th:text="#{about.fees.cta}">Frequent visitors can subscribe to a plan for discounted unlimited access.</span>
+    </p>
+
+    <!-- Contact -->
+    <h2 th:text="'📞 ' + #{about.contact.title}">📞 Contact Us</h2>
+    <div class="contact-grid">
+        <div class="contact-item">
+            <span>📞</span>
+            <div>
+                <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary);" th:text="#{about.contact.main}">Main Line</div>
+                <div style="color:var(--text-muted);">0812 922 321</div>
+            </div>
+        </div>
+        <div class="contact-item">
+            <span>🚨</span>
+            <div>
+                <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary);" th:text="#{about.contact.emergency}">Emergency</div>
+                <div style="color:var(--text-muted);">+94 81 222 2275</div>
+            </div>
+        </div>
+        <div class="contact-item">
+            <span>✉️</span>
+            <div>
+                <div style="font-weight:600;font-size:0.85rem;color:var(--text-primary);" th:text="#{about.contact.email}">Email</div>
+                <div style="color:var(--text-muted);">kmcparking@gmail.com</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <h2 th:text="'📍 ' + #{about.location.title}">📍 Our Location</h2>
+    <div class="map-container">
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3957.549778765368!2d80.633655024108!3d7.291953292715545!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae36629628d877f%3A0xe25435ef43478453!2sKandy%20Municipal%20Council%20Public%20CAR%20Park!5e0!3m2!1sen!2slk!4v1771672465788!5m2!1sen!2slk"
+                allowfullscreen="" loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <p class="map-note">Kandy Municipal Council Public Car Park, Kandy, Sri Lanka</p>
+
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

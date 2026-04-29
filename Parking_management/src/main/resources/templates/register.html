@@ -1,0 +1,68 @@
+<!-- ============================================================
+     REGISTER PAGE  →  save as: register.html
+     ============================================================ -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .register-page {
+            min-height: calc(100vh - 68px - 60px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface-3) 100%);
+        }
+        .register-wrapper { width: 100%; max-width: 480px; }
+        .register-brand { text-align: center; margin-bottom: 2rem; }
+        .register-brand h2 { border: none; font-size: 1.75rem; justify-content: center; margin-bottom: 0.35rem; }
+        .register-brand p { color: var(--text-muted); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+<div class="register-page">
+    <div class="register-wrapper">
+        <div class="register-brand">
+            <h2 th:text="#{register.title}">Create Account</h2>
+            <p th:text="#{register.subtitle}">Join the KMC Smart Car Park system</p>
+        </div>
+        <div class="form-card">
+            <div th:if="${success}" class="alert alert-success"><span>✓</span> <span th:text="${success}"></span></div>
+            <form th:action="@{/register}" th:object="${user}" method="post">
+                <div class="form-group">
+                    <label for="username" th:text="#{label.username}">Username</label>
+                    <input type="text" id="username" th:field="*{username}" th:placeholder="#{placeholder.choose.username}" required>
+                    <span th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="password" th:text="#{label.password}">Password</label>
+                    <input type="password" id="password" th:field="*{password}" th:placeholder="#{placeholder.choose.password}" required>
+                    <span th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error"></span>
+                </div>
+                <div class="form-group">
+                    <label for="fullName" th:text="#{label.fullname}">Full Name</label>
+                    <input type="text" id="fullName" th:field="*{fullName}" th:placeholder="#{placeholder.fullname}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email" th:text="#{label.email}">Email Address</label>
+                    <input type="email" id="email" th:field="*{email}" th:placeholder="#{placeholder.email}" required>
+                    <span th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error"></span>
+                </div>
+                <button type="submit" class="btn btn-accent" style="width:100%;justify-content:center;padding:0.7rem;">
+                    <span th:text="#{register.title}">Create Account</span> →
+                </button>
+            </form>
+            <p style="text-align:center;margin-top:1.25rem;font-size:0.88rem;color:var(--text-muted);">
+                <span th:text="#{register.footer.exists}">Already have an account?</span> <a th:href="@{/admin/select}" th:text="#{register.footer.signin}">Sign in →</a>
+            </p>
+        </div>
+    </div>
+</div>
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

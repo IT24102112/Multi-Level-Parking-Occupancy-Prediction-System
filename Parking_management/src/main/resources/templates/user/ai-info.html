@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Information | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .info-container { max-width: 1000px; margin: 2rem auto; padding: 0 1.5rem; }
+        .info-card { background: var(--surface); border-radius: var(--radius-lg); padding: 2rem; box-shadow: var(--shadow-sm); margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .info-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--accent); }
+        .chart-container { position: relative; height: 350px; width: 100%; margin-top: 2rem; }
+        .metadata-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .meta-item { background: var(--surface-2); padding: 1.25rem; border-radius: var(--radius); border-left: 4px solid var(--primary); }
+        .meta-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 0.25rem; }
+        .meta-value { font-size: 1.1rem; font-weight: 800; color: var(--primary); font-family: 'Outfit', sans-serif; }
+        .accuracy-pill { display: inline-block; background: var(--green-bg); color: #065f46; padding: 0.2rem 0.75rem; border-radius: 20px; font-weight: 700; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="page-header">
+    <div style="max-width:1240px;margin:0 auto;padding:0 2rem;">
+        <h2 style="border:none;margin-bottom:0.25rem;color:#fff;" th:text="#{text.ai.info.title}">Detailed AI Information</h2>
+        <p th:text="#{text.ai.info.subtitle}">Step-by-step forecast for the next 60 minutes</p>
+    </div>
+</div>
+
+<div class="info-container">
+    <a th:href="@{/}" class="btn btn-secondary" style="margin-bottom: 1.5rem;" th:text="#{btn.back.home}">← Back to Live Occupancy</a>
+
+    <!-- Chart Card -->
+    <div class="info-card">
+        <h3 th:text="#{text.chart.forecast}">1-Hour Availability Forecast</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Remaining available slots predicted across the next 60 minutes.</p>
+        <div class="chart-container">
+            <canvas id="forecastChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Model Details Grid -->
+    <h3 th:text="#{text.model.details}">AI Model Technical Details</h3>
+    <div class="metadata-grid">
+        <div class="meta-item">
+            <div class="meta-label">Primary Algorithm</div>
+            <div class="meta-value" th:text="${realtimeModelType}">LSTM Recurrent Model</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Model Accuracy</div>
+            <div class="meta-value">
+                <span class="accuracy-pill" th:text="${realtimeModelAccuracy}">96.5%</span>
+            </div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Mean Absolute Error (MAE)</div>
+            <div class="meta-value" th:text="${realtimeModelMae}">5 vehicles</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Training Data Period</div>
+            <div class="meta-value" th:text="${realtimeTrainingPeriod}">2015 – 2025</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Total Training Records</div>
+            <div class="meta-value" th:text="${seasonalTrainingRecords}">~3.6 million</div>
+        </div>
+        <div class="meta-item">
+            <div class="meta-label">Last Retrained</div>
+            <div class="meta-value" th:text="${realtimeLastTrained}">April 2026</div>
+        </div>
+    </div>
+
+    <div style="margin-top: 3rem; padding: 2rem; background: var(--surface-2); border-radius: var(--radius-lg); text-align: center;">
+        <h4>About the Forecast</h4>
+        <p style="max-width: 600px; margin: 0.5rem auto; font-size: 0.9rem; color: var(--text-muted);">
+            Our LSTM (Long Short-Term Memory) model analyzes 10 years of historical patterns alongside real-time data from IoT sensors to provide a high-confidence forecast. As more sensors are deployed, the accuracy of level-specific predictions will continue to improve.
+        </p>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const forecast = /*[[${forecast}]]*/ [0,0,0,0];
+    const totalCapacity = /*[[${totalCapacity}]]*/ 1200;
+    
+    // Calculate available slots from predicted occupancy
+    const availableData = forecast.map(occ => Math.max(0, totalCapacity - occ));
+    
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['15 Min', '30 Min', '45 Min', '60 Min'],
+            datasets: [{
+                label: 'Predicted Available Slots',
+                data: availableData,
+                backgroundColor: 'rgba(245, 166, 35, 0.1)',
+                borderColor: 'rgba(245, 166, 35, 1)',
+                borderWidth: 3,
+                tension: 0.4,
+                pointBackgroundColor: 'rgba(255, 255, 255, 1)',
+                pointBorderColor: 'rgba(10, 22, 40, 1)',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: totalCapacity,
+                    title: { display: true, text: 'Slots Available' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+    /*]]>*/
+</script>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

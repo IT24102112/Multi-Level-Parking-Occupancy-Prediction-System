@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | KMC Smart Car Park</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .select-page {
+            min-height: calc(100vh - 68px - 60px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            background: linear-gradient(160deg, var(--surface-2) 0%, var(--surface-3) 100%);
+        }
+        .select-heading {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .select-heading h2 {
+            border: none;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            justify-content: center;
+        }
+        .select-heading p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .admin-card {
+            position: relative;
+            overflow: hidden;
+            padding: 2.5rem 2rem; /* moved from inline styles */
+        }
+        .admin-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--accent);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .admin-card:hover::after { transform: scaleX(1); }
+
+        /* compact alert variant used on this page */
+        .alert.alert-compact { max-width: 400px; margin-top: 1.5rem; }
+
+        /* Blacklist splash / overlay styles moved here (was inline) */
+        .blacklist-splash {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 15, 20, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: #fff;
+            padding: 2rem;
+            pointer-events: all;
+            width: 100vw;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            animation: splashFade 0.6s ease-out forwards;
+        }
+
+        @keyframes splashFade {
+            from { opacity: 0; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .splash-content { animation: contentUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes contentUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .splash-circle { background: rgba(239, 68, 68, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem; border: 2px solid #ef4444; }
+        .splash-icon { font-size: 3rem; color: #ef4444; }
+        .splash-ok { box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4); text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div th:replace="fragments/header :: header"></div>
+
+<div class="select-page">
+    <div class="select-heading">
+        <h2 th:text="#{admin.select.title}">Admin Portal</h2>
+        <p th:text="#{admin.select.subtitle}">Select your role to continue to the KMC Car Park system</p>
+    </div>
+
+    <div class="admin-select">
+        <div class="admin-card form-card">
+            <span class="admin-card-icon" aria-hidden="true">
+                <!-- Inline SVG user/person icon for KMC Admin (colorable via CSS fill) -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                    <!-- Classic user silhouette: head + shoulders -->
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
+            </span>
+             <h3 th:text="#{kmc.admin}">KMC Admin</h3>
+             <p th:text="#{kmc.admin.desc}">Access occupancy reports and analytics for the Kandy Municipal Council.</p>
+             <a th:href="@{/admin/login(role='kmc')}" class="btn btn-accent" th:text="#{btn.login.kmc}">Login as KMC</a>
+         </div>
+
+         <div class="admin-card form-card">
+            <span class="admin-card-icon" aria-hidden="true">
+                <!-- Inline SVG gear icon (colorable via CSS fill) -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                    <path d="M19.14 12.936a7.007 7.007 0 0 0 .06-1.116 7.007 7.007 0 0 0-.06-1.116l2.03-1.577a.5.5 0 0 0 .12-.637l-1.922-3.326a.5.5 0 0 0-.607-.22l-2.39.96a6.99 6.99 0 0 0-1.93-1.116l-.36-2.54a.5.5 0 0 0-.497-.42h-3.844a.5.5 0 0 0-.497.42l-.36 2.54a6.99 6.99 0 0 0-1.93 1.116l-2.39-.96a.5.5 0 0 0-.607.22L2.68 8.107a.5.5 0 0 0 .12.637l2.03 1.577a7.007 7.007 0 0 0-.06 1.116c0 .377.02.75.06 1.116l-2.03 1.577a.5.5 0 0 0-.12.637l1.922 3.326a.5.5 0 0 0 .607.22l2.39-.96c.586.445 1.227.8 1.93 1.116l.36 2.54a.5.5 0 0 0 .497.42h3.844a.5.5 0 0 0 .497-.42l.36-2.54c.703-.316 1.344-.671 1.93-1.116l2.39.96a.5.5 0 0 0 .607-.22l1.922-3.326a.5.5 0 0 0-.12-.637l-2.03-1.577zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z" />
+                </svg>
+            </span>
+             <h3 th:text="#{it.admin}">IT Division Admin</h3>
+             <p th:text="#{it.admin.desc}">Full system access — manage events, users, billing and system status.</p>
+             <a th:href="@{/admin/login(role='it')}" class="btn" th:text="#{btn.login.it}">Login as IT Admin</a>
+         </div>
+     </div>
+
+    <p th:if="${param.error != null and param.error[0] == 'true'}" class="alert alert-error alert-compact">
+        <span>⚠</span> <span th:text="#{alert.invalid}">Invalid login or role mismatch. Please try again.</span>
+    </p>
+
+    <!-- Blacklist Login Splash Screen -->
+    <div th:if="${param.error != null and param.error[0] == 'blacklisted'}" class="blacklist-splash">
+        <div class="splash-content">
+            <div class="splash-circle">
+                <span class="splash-icon">⚠</span>
+            </div>
+            <h1 class="splash-title" th:text="#{alert.restricted}">Access Restricted</h1>
+            <p class="splash-text" th:utext="#{alert.blacklisted}">
+                You have been blacklisted and contact the <br><strong>KMC to manage your details</strong>.
+            </p>
+            
+            <div style="margin-top: 3.5rem;">
+                <a th:href="@{/admin/portal}" class="btn btn-lg btn-danger splash-ok">OK</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:replace="fragments/footer :: footer"></div>
+</body>
+</html>

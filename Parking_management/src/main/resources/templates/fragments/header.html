@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${title} + ' | KMC Car Park'">KMC Car Park</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header th:fragment="header" class="glass-overlay" style="background: rgba(10, 22, 40, 0.85); backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,0.1);">
+
+  <div class="logo">
+    <!-- SVG logo — no image file needed, sharp at any size -->
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none"
+         xmlns="http://www.w3.org/2000/svg" class="logo-img">
+      <rect width="38" height="38" rx="9" fill="#f5a623"/>
+      <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+            font-family="Outfit,sans-serif" font-weight="800"
+            font-size="22" fill="#0a1628">P</text>
+    </svg>
+    <h1>KMC <span>Smart</span> Car Park</h1>
+  </div>
+
+  <button class="menu-toggle" aria-label="Toggle Navigation">
+    <span class="hamburger"></span>
+  </button>
+
+  <nav id="nav-menu">
+    <ul>
+      <li><a th:href="@{/}" th:text="#{nav.home}">Home</a></li>
+      <li><a th:href="@{/about}" th:text="#{nav.about}">About</a></li>
+      <li><a th:href="@{/bike-info}" th:text="#{nav.bikes}">Bikes</a></li>
+
+      <!-- Language Switcher -->
+      <li style="margin: 0 0.5rem; display: flex; gap: 0.2rem;">
+        <a th:href="@{'?lang=en'}" style="padding:0.2rem 0.4rem; font-size:0.8rem; background:rgba(255,255,255,0.1); border-radius:4px;">EN</a>
+        <a th:href="@{'?lang=si'}" style="padding:0.2rem 0.4rem; font-size:0.8rem; background:rgba(255,255,255,0.1); border-radius:4px;">සිං</a>
+        <a th:href="@{'?lang=ta'}" style="padding:0.2rem 0.4rem; font-size:0.8rem; background:rgba(255,255,255,0.1); border-radius:4px;">த</a>
+      </li>
+
+      <li sec:authorize="!isAuthenticated()" th:if="${#httpServletRequest.requestURI != '/login'}">
+        <a th:href="@{/register}" th:text="#{nav.register}">Register</a>
+      </li>
+      <li sec:authorize="!isAuthenticated()" th:if="${#httpServletRequest.requestURI != '/login'}">
+        <a th:href="@{/login}"
+           class="btn btn-accent"
+           style="padding:0.4rem 1rem;font-size:0.85rem;" th:text="#{nav.login}">Login</a>
+      </li>
+
+      <li sec:authorize="hasRole('IT_ADMIN')">
+        <a th:href="@{/admin/dashboard}">Dashboard</a>
+      </li>
+      <li sec:authorize="hasRole('KMC_ADMIN')">
+        <a th:href="@{/admin/kmc/reports}">Reports</a>
+      </li>
+      <li sec:authorize="hasRole('USER')">
+        <a th:href="@{/user/dashboard}">My Account</a>
+      </li>
+
+      <li sec:authorize="isAuthenticated()">
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+          <input type="submit" value="Logout" class="logout-button"/>
+        </form>
+      </li>
+
+      <li>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </li>
+    </ul>
+  </nav>
+
+  <script>
+    (function() {
+      const toggle = document.getElementById('theme-toggle');
+      if (!toggle) return;
+      
+      const applyTheme = (theme) => {
+        if (theme === 'dark') {
+          document.body.classList.add('dark-mode');
+          toggle.textContent = '☀️';
+        } else {
+          document.body.classList.remove('dark-mode');
+          toggle.textContent = '🌙';
+        }
+      };
+
+      const saved = localStorage.getItem('theme');
+      if (saved) {
+        applyTheme(saved);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        applyTheme('dark');
+      }
+
+      toggle.addEventListener('click', function() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        toggle.textContent = isDark ? '☀️' : '🌙';
+      });
+    })();
+  </script>
+</header>
+</body>
+</html>
