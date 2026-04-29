@@ -1,0 +1,26 @@
+{
+    "w_sgd": 0.85,
+    "w_seasonal": 0.15,
+    "lookback_window": 12,
+    "capacity": 1100,
+    "seasonal_features_scaler": [
+        "hour_sin",
+        "hour_cos",
+        "day_sin",
+        "day_cos",
+        "is_weekend",
+        "is_holiday",
+        "month",
+        "occupancy_pct"
+    ],
+    "realtime_features": [
+        "occupancy_pct",
+        "hour",
+        "day_of_week",
+        "is_weekend",
+        "occ_lag_1",
+        "occ_lag_2",
+        "occ_lag_3",
+        "rolling_mean_30m"
+    ]
+}
